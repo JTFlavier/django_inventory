@@ -1,0 +1,62 @@
+**Scenario:**
+
+You are working for a company that sells products online. The company wants to automate its order processing system to improve efficiency and reduce manual intervention. As part of this project, you are responsible for building a Django model and API endpoint that will receive orders from the company's website and process them using Celery.
+
+**Requirements:**
+
+- The Django model should have the following fields:
+   - Name: The name of the product (CharField)
+   - SKU: A unique identifier for the product (CharField)
+   - Price: The price of the product (DecimalField)
+   - Description: A description of the product (TextField)
+   - Quantity: The quantity of the product in stock (IntegerField)
+   - Status: The status of the product (BooleanField) - True if the product is available, False if it is out of stock.
+   
+- The API endpoint should accept orders from the company's website in the following format:
+   ```
+   {
+       "order_number": "12345",
+       "items": [
+           {
+               "sku": "ABCD1234",
+               "quantity": 2
+           },
+           {
+               "sku": "EFGH5678",
+               "quantity": 1
+           }
+       ],
+       "customer": {
+           "name": "John Smith",
+           "email": "john.smith@example.com",
+           "address": "123 Main St, Anytown USA"
+       }
+   }
+   ```
+
+- When an order is received, the API endpoint should:
+   - Check the availability of each item in the order by querying the Django model.
+   - If any item is out of stock, the API endpoint should return an error message indicating which item is out of stock.
+   - If all items are in stock, the API endpoint should create a Celery task to process the order asynchronously.
+   - The Celery task should update the Django model to reflect the new inventory levels and send an email to the customer confirming the order.
+   
+- The API endpoint should also have the following custom behaviors:
+   - An endpoint to retrieve a list of all products that are currently available.
+   - An endpoint to retrieve a list of all products that are currently out of stock.
+   - An endpoint to update the status of a product to either available or out of stock.
+
+**Evaluation Criteria:**
+
+- Correctness of the code and adherence to the requirements.
+- Code quality, including readability, maintainability, and organization.
+- Use of best practices in Django, Django REST Framework, and Celery.
+- Use of appropriate error handling and exception handling.
+
+**Bonus**
+- use Docker and Docker compose to setup environment
+
+**How to submit your work**
+- When you are ready to submit your work, upload your work in a repo somewhere and send the github repo link to your interviewer.
+- add a simple readme about your work.
+
+
