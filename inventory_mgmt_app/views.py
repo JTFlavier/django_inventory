@@ -38,11 +38,27 @@ class ItemHandlingView(APIView):
         elif (isAvailable == "False"):
             items = Item.objects.filter(quantity__lte = 0)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            items = Item.objects.all()
 
         serializer = ItemSerializer(items, many=True)
     
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # 2. Create
+    def post(self, request, *args, **kwargs):
+        '''
+        Create the Todo with given todo data
+        '''
+        data = {
+            'sku': request.data.get('sku'), 
+            'quantity': request.data.get('quantity'), 
+        }
+        serializer = ItemSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # def items_list(request): 
 #     """
