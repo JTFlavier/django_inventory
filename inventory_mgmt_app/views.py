@@ -20,6 +20,29 @@ class OrderHandlingApiView(APIView):
         items = Item.objects.all()
         serializer = ItemSerializer(items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ItemHandlingView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        '''
+        Get all items, regardless of availability
+        '''
+
+        isAvailable = self.request.query_params.get('isAvailable')
+        print(isAvailable)
+        items = ""
+    
+        if (isAvailable == "True"):
+            items =  Item.objects.filter(quantity__gt = 0)
+        elif (isAvailable == "False"):
+            items = Item.objects.filter(quantity__lte = 0)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = ItemSerializer(items, many=True)
+    
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # def items_list(request): 
 #     """
