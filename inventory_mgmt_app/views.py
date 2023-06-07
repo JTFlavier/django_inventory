@@ -6,7 +6,7 @@ from rest_framework import permissions
 from .models import Order, Customer, Item
 from .serializers import *
 
-# Create your views here.
+# https://www.bezkoder.com/django-rest-api/
 
 class OrderHandlingApiView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -24,9 +24,18 @@ class OrderHandlingApiView(APIView):
 class ItemHandlingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_item(self, sku, user_id):
+        '''
+        Helper method to get the object with given todo_id, and user_id
+        '''
+        try:
+            return Item.objects.get(sku=sku)
+        except Item.DoesNotExist:
+            return None
+
     def get(self, request, *args, **kwargs):
         '''
-        Get all items, regardless of availability
+        Get all items depending on 'isAvailable'
         '''
 
         isAvailable = self.request.query_params.get('isAvailable')
@@ -58,6 +67,28 @@ class ItemHandlingView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+   # 4. Update
+    def put(self, request, *args, **kwargs):
+        '''
+        Updates the todo item with given todo_id if exists
+        '''
+
+        sku = request.data.get('sku')
+        item_instance = self.get_item(sku, request.user.id)
+        if not item_instance:
+            return Response(
+                {"res": "SKU does not exist"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        data = {
+            'quantity': request.data.get('quantity'), 
+        }
+        serializer = ItemSerializer(instance = item_instance, data=data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # def items_list(request): 
