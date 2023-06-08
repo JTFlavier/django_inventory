@@ -4,7 +4,7 @@ from .models import Order, Customer, Item
 class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
-        fields = ["sku", "quantity"]
+        fields = ["sku", "name", "price", "description", "quantity"]
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
