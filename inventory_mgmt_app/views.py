@@ -1,28 +1,90 @@
 # todo/todo_api/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import permissions
+from rest_framework import status, permissions, generics, mixins, viewsets
 from .models import Order, Customer, Item
 from .serializers import *
 
 # https://www.bezkoder.com/django-rest-api/
 
+# class CreateListModelMixin(object):
+#     def get_serializer(self, *args, **kwargs):
+#         """ if an array is passed, set serializer to many """
+#         if isinstance(kwargs.get('data', {}), list):
+#             kwargs['many'] = True
+#         return super(CreateListModelMixin, self).get_serializer(*args, **kwargs)
+
 class OrderHandlingApiView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    # FIXME: find way to refactor this function
+    def get_item(self, sku, user_id):
+        '''
+        Helper method to get the object with given todo_id, and user_id
+        '''
+        try:
+            return Item.objects.get(sku=sku)
+        except Item.DoesNotExist:
+            return None
 
     #def get_all_items(self, request, *args, **kwargs):
     def get(self, request, *args, **kwargs):
         '''
-        Get all items, regardless of availability
+        Get all order, regardless of availability
         '''
 
-        items = Item.objects.all()
-        serializer = ItemSerializer(items, many=True)
+        items = Order.objects.all()
+        serializer = OrderSerializer(items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-class ItemHandlingView(APIView):
+    def post(self, request):
+        '''
+            - Check the availability of each item in the order by querying the Django model.
+            - If any item is out of stock, the API endpoint should return an error message indicating which item is out of stock.
+            - If all items are in stock, the API endpoint should create a Celery task to process the order asynchronously.
+            - The Celery task should update the Django model to reflect the new inventory levels and send an email to the customer confirming the order.
+
+            format:
+        [
+           {
+                "order_number": "12345",
+                "items": [
+                    {
+                        "sku": "ABCD1234",
+                        "quantity": 2
+                    },
+                    {
+                        "sku": "EFGH5678",
+                        "quantity": 1
+                    }
+                ],
+                "customer": {
+                    "name": "John Smith",
+                    "email": "john.smith@example.com",
+                    "address": "123 Main St, Anytown USA"
+                }
+            }
+        ]
+        '''
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ItemSerializer
+
+    def get_queryset(self):
+        is_available = self.request.query_params.get('isAvailable')
+
+        if (is_available == "True"):
+            return Item.objects.filter(status = True)
+        elif (is_available == "False"):
+            return Item.objects.filter(status = False)
+        else:
+            return Item.objects.all()
+
+    def filter_queryset(self, queryset):
+        return super().filter_queryset(queryset)
 
     def get_item(self, sku, user_id):
         '''
@@ -37,17 +99,16 @@ class ItemHandlingView(APIView):
         '''
         Get all items depending on 'isAvailable'
         '''
-
-        isAvailable = self.request.query_params.get('isAvailable')
-        print(isAvailable)
-        items = ""
+        
+        #    items
     
-        if (isAvailable == "True"):
-            items =  Item.objects.filter(quantity__gt = 0)
-        elif (isAvailable == "False"):
-            items = Item.objects.filter(quantity__lte = 0)
-        else:
-            items = Item.objects.all()
+        #if (isAvailable == "True"):
+        #    items =  Item.objects.filter(status = True)
+        #elif (isAvailable == "False"):
+        #    items = Item.objects.filter(status = False)
+        #else:
+            #items = Item.objects.all()
+        items = self.get_queryset()
 
         serializer = ItemSerializer(items, many=True)
     
@@ -58,15 +119,15 @@ class ItemHandlingView(APIView):
         '''
         Create the Todo with given todo data
         '''
-        data = {
-            'sku': request.data.get('sku'), 
-            'quantity': request.data.get('quantity'), 
-        }
-        serializer = ItemSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+        is_many = isinstance(request.data, list)
+        if not is_many:
+            return super(ItemHandlingView, self).create(request, *args, **kwargs)
+        else:
+            serializer = self.get_serializer(data=request.data, many=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
    # 4. Update

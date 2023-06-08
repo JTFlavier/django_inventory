@@ -7,6 +7,6 @@ from .views import(
 urlpatterns = [
     #path('items/', views.),
     path('orders/', OrderHandlingApiView.as_view()),
-    path('items/', ItemHandlingView.as_view()),
+    path('items/', ItemHandlingView.as_view({'get': 'list'})),
     #path('orders/<int:pk>/', views.order_detail),
 ]
