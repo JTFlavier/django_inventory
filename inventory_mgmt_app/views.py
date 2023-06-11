@@ -14,61 +14,16 @@ from .serializers import *
 #             kwargs['many'] = True
 #         return super(CreateListModelMixin, self).get_serializer(*args, **kwargs)
 
-class OrderHandlingApiView(APIView):
+# TODO: add 
+class OrderHandlingApiView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = OrderSerializer
 
-    # FIXME: find way to refactor this function
-    def get_item(self, sku, user_id):
-        '''
-        Helper method to get the object with given todo_id, and user_id
-        '''
-        try:
-            return Item.objects.get(sku=sku)
-        except Item.DoesNotExist:
-            return None
-
-    #def get_all_items(self, request, *args, **kwargs):
-    def get(self, request, *args, **kwargs):
-        '''
-        Get all order, regardless of availability
-        '''
-
-        items = Order.objects.all()
-        serializer = OrderSerializer(items, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        return Order.objects.all()
     
-    def post(self, request):
-        '''
-            - Check the availability of each item in the order by querying the Django model.
-            - If any item is out of stock, the API endpoint should return an error message indicating which item is out of stock.
-            - If all items are in stock, the API endpoint should create a Celery task to process the order asynchronously.
-            - The Celery task should update the Django model to reflect the new inventory levels and send an email to the customer confirming the order.
-
-            format:
-        [
-           {
-                "order_number": "12345",
-                "items": [
-                    {
-                        "sku": "ABCD1234",
-                        "quantity": 2
-                    },
-                    {
-                        "sku": "EFGH5678",
-                        "quantity": 1
-                    }
-                ],
-                "customer": {
-                    "name": "John Smith",
-                    "email": "john.smith@example.com",
-                    "address": "123 Main St, Anytown USA"
-                }
-            }
-        ]
-        '''
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+## TODO: refactor put
+## TODO: add delete
 class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ItemSerializer
@@ -82,9 +37,6 @@ class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.
             return Item.objects.filter(status = False)
         else:
             return Item.objects.all()
-
-    def filter_queryset(self, queryset):
-        return super().filter_queryset(queryset)
 
     def get_item(self, sku, user_id):
         '''
@@ -151,6 +103,8 @@ class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+## TODO: add customer handler
 
 # def items_list(request): 
 #     """
