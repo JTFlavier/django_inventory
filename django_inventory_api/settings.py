@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
-from .secrets import KEY
+from .secrets import KEY, EMAIL_PASSWORD
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'inventory_mgmt_app'
+    'inventory_mgmt_app',
 ]
 
 MIDDLEWARE = [
@@ -129,6 +129,24 @@ REST_FRAMEWORK = {
 }
 
 # Celery Configuration Options
-CELERY_TIMEZONE = "Asia/Manila"
+BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Manila'
+
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
+
+# Email config
+#settings.py 
+
+# SMTP SETTINGS
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_USE_TLS = True
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_HOST_USER = "<username>@<example>.com"
+EMAIL_HOST_PASSWORD = EMAIL_PASSWORD
+DEFAULT_FROM_EMAIL = 'Celery <<username>@<example>.com>'

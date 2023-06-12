@@ -8,15 +8,7 @@ from .tasks import update_item_stock
 
 # https://www.bezkoder.com/django-rest-api/
 
-# class CreateListModelMixin(object):
-#     def get_serializer(self, *args, **kwargs):
-#         """ if an array is passed, set serializer to many """
-#         if isinstance(kwargs.get('data', {}), list):
-#             kwargs['many'] = True
-#         return super(CreateListModelMixin, self).get_serializer(*args, **kwargs)
-
-# TODO: add 
-class OrderHandlingApiView(APIView):
+class OrderHandlingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = OrderSerializer
 
@@ -66,16 +58,13 @@ class OrderHandlingApiView(APIView):
 
 
         # update stock w/ celery
-        update_item_stock(items)
-
-        # send email w/ celery
+        # also send email
+        update_item_stock(items, customer["name"], customer["email"], customer["address"])
 
         items_after_update = Item.objects.filter(sku__in=sku_ids).values()
 
-        return Response(items_after_update, status=status.HTTP_200_OK)
+        return Response(items_after_update, status=status.HTTP_201_CREATED)
     
-## TODO: refactor put
-## TODO: add delete
 class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ItemSerializer
@@ -103,15 +92,6 @@ class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.
         '''
         Get all items depending on 'isAvailable'
         '''
-        
-        #    items
-    
-        #if (isAvailable == "True"):
-        #    items =  Item.objects.filter(status = True)
-        #elif (isAvailable == "False"):
-        #    items = Item.objects.filter(status = False)
-        #else:
-            #items = Item.objects.all()
         items = self.get_queryset()
 
         serializer = ItemSerializer(items, many=True)
@@ -121,7 +101,7 @@ class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.
     # 2. Create
     def post(self, request, *args, **kwargs):
         '''
-        Create the Todo with given todo data
+        Create the Item with given data
         '''
         is_many = isinstance(request.data, list)
         if not is_many:
@@ -137,7 +117,7 @@ class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.
    # 4. Update
     def put(self, request, *args, **kwargs):
         '''
-        Updates the todo item with given todo_id if exists
+        Updates the item with given sku if exists
         '''
 
         sku = request.data.get('sku')
@@ -157,58 +137,3 @@ class ItemHandlingView(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 ## TODO: add customer handler
-
-# def items_list(request): 
-#     """
-#     GET: return all items
-#     POST: n/a
-#     PUT: update item status (aka quantity)
-#     DELETE: delete item 
-    
-#     TODO: add behavior for available vs out of stock items
-#     """
-
-# @csrf_exempt
-# def order_list(request):
-#     """
-#     List all code orders, or create a new order.
-#     """
-#     if request.method == 'GET':
-#         orders = Order.objects.all()
-#         serializer = OrderSerializer(orders, many=True)
-#         return JsonResponse(serializer.data, safe=False)
-
-#     elif request.method == 'POST':
-#         data = JSONParser().parse(request)
-#         serializer = OrderSerializer(data=data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return JsonResponse(serializer.data, status=201)
-#         return JsonResponse(serializer.errors, status=400)
-    
-# @csrf_exempt
-# def order_detail(request, pk):
-#     """
-#     Retrieve, update or delete a code order.
-#     """
-#     try:
-#         order = Order.objects.get(pk=pk)
-#     except order.DoesNotExist:
-#         return HttpResponse(status=404)
-
-#     if request.method == 'GET':
-#         serializer = OrderSerializer(order)
-#         return JsonResponse(serializer.data)
-
-#     elif request.method == 'PUT':
-#         data = JSONParser().parse(request)
-#         serializer = OrderSerializer(order, data=data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return JsonResponse(serializer.data)
-#         return JsonResponse(serializer.errors, status=400)
-
-#     elif request.method == 'DELETE':
-#         order.delete()
-#         return HttpResponse(status=204)
-
