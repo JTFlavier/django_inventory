@@ -1,0 +1,12 @@
+name: go2-django
+channels:
+  - defaults
+dependencies:
+  - ipykernel
+  - kombu
+  - conda=23.5.0
+  - celery
+  - redis
+  - django
+  - redis-py
+prefix: /home/javy/miniconda3/envs/go2-django
