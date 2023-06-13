@@ -1,18 +1,27 @@
-FROM continuumio/miniconda3
+# base image  
+FROM python:3.11 
+# setup environment variable  
+ENV DockerHOME=/home/app/go2_django  
 
-WORKDIR /app
+# set work directory  
+RUN mkdir -p $DockerHOME  
 
-# Create the environment:
-COPY environment.yml .
-RUN conda env create -f environment.yml
+# where your code lives  
+WORKDIR $DockerHOME  
 
-# Make RUN commands use the new environment:
-SHELL ["conda", "run", "-n", "myenv", "/bin/bash", "-c"]
+# set environment variables  
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1  
 
-# Demonstrate the environment is activated:
-RUN echo "Make sure django is installed:"
-RUN python -c "import django"
+# install dependencies  
+RUN pip install --upgrade pip  
 
-# The code to run when container is started:
-COPY run.py .
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "myenv", "python", "run.py"]
+# copy whole project to your docker home directory. 
+COPY . $DockerHOME  
+# run this command to install all dependencies  
+RUN pip install -r requirements.txt  
+# port where the Django app runs  
+EXPOSE 8000  
+
+# start server  
+# CMD python manage.py runserver
